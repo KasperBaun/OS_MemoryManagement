@@ -48,10 +48,9 @@ static struct memoryList *next;
 
 void initmem(strategies strategy, size_t sz)
 {
-	myStrategy = strategy;
-
 	/* all implementations will need an actual block of memory to use */
 	mySize = sz;
+	myStrategy = strategy;
 
 	if (myMemory != NULL) free(myMemory); /* in case this is not the first time initmem2 is called */
 
@@ -60,7 +59,12 @@ void initmem(strategies strategy, size_t sz)
 
 	myMemory = malloc(sz);
 	
-	/* TODO: Initialize memory management structure. */
+	head = (struct memoryList*) malloc(sizeof (struct memoryList));
+	head->last = NULL; 
+	head->next = NULL;
+	head->size = sz; // First block size is equal to size_t sz given in initmem()
+	head->alloc = 0;  // Not allocated
+	head->ptr = myMemory;  // points to the same memory adress as the memory pool
 
 
 }
@@ -210,6 +214,15 @@ strategies strategyFromString(char * strategy)
 /* Use this function to print out the current contents of memory. */
 void print_memory()
 {
+	struct memoryList *trav;
+	int counter = 0;
+	printf("### Printing memory-list ###\n");
+	for(trav=head; trav->next!=NULL; trav=trav->next)
+		{
+		printf(" node number = %d\n size = %d\n last = %p\n next = %p\n this.ptr = %p\n", counter,trav->size, trav->last, trav->next, trav->ptr);
+		printf(" Is the node allocated: %d\n\n",trav->alloc );
+		counter++;
+		}	
 	return;
 }
 
