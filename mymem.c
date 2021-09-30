@@ -9,7 +9,6 @@
 /* The main structure for implementing memory allocation.
  * You may change this to fit your implementation.
  */
-
 struct memoryList
 {
   // doubly-linked list
@@ -21,10 +20,7 @@ struct memoryList
                        // 0 if this block is free.
   void *ptr;           // location of block in memory pool.
 };
-
 strategies myStrategy = NotSet;    // Current strategy
-
-
 size_t mySize;
 void *myMemory = NULL;
 
@@ -52,21 +48,30 @@ void initmem(strategies strategy, size_t sz)
 	mySize = sz;
 	myStrategy = strategy;
 
-	if (myMemory != NULL) free(myMemory); /* in case this is not the first time initmem2 is called */
+	/* 
+	Release any memory previously allocated and assigned 
+	in case this is not the first time initmem is called */
+	if (myMemory != NULL){
+		struct memoryList *trav;	
+		for(trav=head; trav->next!=NULL; trav=trav->next)
+		{
+			free(trav);
+			free(trav->last);
+		}
+		free(myMemory);	
+	}  
 
-	/* TODO: release any other memory you were using for bookkeeping when doing a re-initialization! */
 
 
-	myMemory = malloc(sz);
-	
+	/*  Assign memory space on heap for myMemory 
+		and create new node head and attach*/
+	myMemory = malloc(mySize);	
 	head = (struct memoryList*) malloc(sizeof (struct memoryList));
 	head->last = NULL; 
 	head->next = NULL;
 	head->size = sz; // First block size is equal to size_t sz given in initmem()
 	head->alloc = 0;  // Not allocated
 	head->ptr = myMemory;  // points to the same memory adress as the memory pool
-
-
 }
 
 /* Allocate a block of memory with the requested size.
