@@ -19,7 +19,7 @@ struct memoryList
   char alloc;          // 1 if this block is allocated,
                        // 0 if this block is free.
   void *ptr;           // location of block in memory pool.
-};
+} MemoryList;
 strategies myStrategy = NotSet;    // Current strategy
 size_t mySize;
 void *myMemory = NULL;
@@ -51,15 +51,14 @@ void initmem(strategies strategy, size_t sz)
 	/* 
 	Release any memory previously allocated and assigned 
 	in case this is not the first time initmem is called */
-	if (myMemory != NULL){
-		struct memoryList *trav;	
-		for(trav=head; trav->next!=NULL; trav=trav->next)
-		{
-			free(trav);
+	struct memoryList *trav;
+	if(head!=NULL){
+		for(trav=head; trav->next!=NULL; trav=trav->next){
 			free(trav->last);
+			free(trav);
 		}
-		free(myMemory);	
-	}  
+	}
+	if(myMemory!=NULL) free(myMemory);
 
 
 
@@ -83,12 +82,30 @@ void initmem(strategies strategy, size_t sz)
 void *mymalloc(size_t requested)
 {
 	assert((int)myStrategy > 0);
-	
+	struct memoryList *trav;
 	switch (myStrategy)
 	  {
 	  case NotSet: 
 	            return NULL;
 	  case First:
+		for(trav=head; trav->next!=NULL;trav=trav->next){
+			if (trav->alloc==0)
+			{
+				if(trav->size>=requested){
+					struct memoryList *new = malloc(sizeof (struct memoryList));
+					trav->alloc = 1;
+					trav->size = requested;
+					trav->next = new->ptr;		
+
+					new->size = trav->size-requested;
+					new->last = trav->ptr;
+					new->next = NULL;
+					new->alloc = 0;
+					return new->ptr;
+				}
+			}
+			
+		}
 	            return NULL;
 	  case Best:
 	            return NULL;
