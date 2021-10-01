@@ -25,7 +25,6 @@ size_t mySize;
 void *myMemory = NULL;
 
 static struct memoryList *head;
-static struct memoryList *next;
 
 
 /* initmem must be called prior to mymalloc and myfree.
@@ -134,7 +133,7 @@ void myfree(void* block)
 int mem_holes()
 {	//TODO: Ask buphjit if this is supposed to calculate contiguos ares of free space or not?
 	int counter=0;
-	struct *memoryList trav;
+	struct memoryList *trav = head;
 	while(trav!=NULL)
 	{
 		if (trav->alloc==0)
@@ -150,7 +149,7 @@ int mem_holes()
 int mem_allocated()
 {
 	int counter=0;
-	struct *memoryList trav;
+	struct memoryList *trav = head;
 	while(trav!=NULL)
 	{
 		if (trav->alloc==1)
@@ -166,7 +165,7 @@ int mem_allocated()
 int mem_free()
 {
 	int counter=0;
-	struct *memoryList trav;
+	struct memoryList *trav = head;
 	while(trav!=NULL)
 	{
 		if (trav->alloc==0)
@@ -182,7 +181,7 @@ int mem_free()
 int mem_largest_free()
 {	
 	int largestBlock = 0;
-	struct *memoryList trav = head;
+	struct memoryList *trav = head;
 	while(trav!=NULL)
 	{
 		if(trav->size>largestBlock && trav->alloc==0){
@@ -197,7 +196,7 @@ int mem_largest_free()
 int mem_small_free(int size)
 {
 	int counter=0;
-	struct *memoryList trav;
+	struct memoryList *trav = head;
 	while(trav!=NULL)
 	{
 		if (trav->alloc==0 && trav->size<size)
@@ -210,13 +209,17 @@ int mem_small_free(int size)
 }      
 
 char mem_is_alloc(void *ptr)
-{		
-	if (ptr->alloc==1)
+{
+	struct memoryList *trav = head;
+	while(trav!=NULL)
 	{
-		return 1;
-	}
-	
-        return 0;
+		if (trav->ptr==ptr)
+		{
+			return 1;
+		}
+		trav = trav->next;		
+	}	
+	return 0;
 }
 
 /* 
