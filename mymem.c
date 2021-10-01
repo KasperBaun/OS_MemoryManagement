@@ -133,13 +133,31 @@ void myfree(void* block)
 /* Get the number of contiguous areas of free space in memory. */
 int mem_holes()
 {
-	return 0;
+	int counter=0;
+	struct *memoryList trav;
+	for (trav=head; trav->!=NULL; trav=trav->next)
+	{
+		if (trav->alloc==0)
+		{
+			counter++;
+		}		
+	}	
+	return counter;
 }
 
 /* Get the number of bytes allocated */
 int mem_allocated()
 {
-	return 0;
+	int counter=0;
+	struct *memoryList trav;
+	for (trav=head; trav->!=NULL; trav=trav->next)
+	{
+		if (trav->alloc==1)
+		{
+			counter = counter+trav->size;
+		}		
+	}	
+	return counter;
 }
 
 /* Number of non-allocated bytes */

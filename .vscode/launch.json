@@ -13,11 +13,11 @@
       "externalConsole": false,
       "MIMode": "gdb",
       "setupCommands": [
-          {
-              "description": "Enable pretty-printing for gdb",
-              "text": "-enable-pretty-printing",
-              "ignoreFailures": true
-          }
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
       ]
     },
     {
@@ -49,7 +49,7 @@
       "stopAtEntry": false,
       "cwd": "/home/kasper/Dokumenter/GitHub/OSMem",
       "environment": [],
-      "program": "${fileDirname}/${fileBasenameNoExtension}",
+      "program": "/home/kasper/Dokumenter/GitHub/OSMem/build/Debug/outDebug",
       "internalConsoleOptions": "openOnSessionStart",
       "MIMode": "gdb",
       "miDebuggerPath": "/usr/bin/gdb",

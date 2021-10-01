@@ -18,7 +18,7 @@
         "-Wextra",
         "-Wpedantic"
       ],
-      "compilerPath": "gcc"
+      "compilerPath": "/usr/bin/gcc"
     }
   ],
   "version": 4
