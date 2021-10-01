@@ -132,15 +132,16 @@ void myfree(void* block)
 
 /* Get the number of contiguous areas of free space in memory. */
 int mem_holes()
-{
+{	//TODO: Ask buphjit if this is supposed to calculate contiguos ares of free space or not?
 	int counter=0;
 	struct *memoryList trav;
-	for (trav=head; trav->!=NULL; trav=trav->next)
+	while(trav!=NULL)
 	{
 		if (trav->alloc==0)
 		{
 			counter++;
-		}		
+		}
+		trav = trav->next;		
 	}	
 	return counter;
 }
@@ -150,12 +151,13 @@ int mem_allocated()
 {
 	int counter=0;
 	struct *memoryList trav;
-	for (trav=head; trav->!=NULL; trav=trav->next)
+	while(trav!=NULL)
 	{
 		if (trav->alloc==1)
 		{
 			counter = counter+trav->size;
-		}		
+		}
+		trav = trav->next;		
 	}	
 	return counter;
 }
@@ -163,23 +165,57 @@ int mem_allocated()
 /* Number of non-allocated bytes */
 int mem_free()
 {
-	return 0;
+	int counter=0;
+	struct *memoryList trav;
+	while(trav!=NULL)
+	{
+		if (trav->alloc==0)
+		{
+			counter = counter+trav->size;
+		}
+		trav = trav->next;		
+	}	
+	return counter;
 }
 
 /* Number of bytes in the largest contiguous area of unallocated memory */
 int mem_largest_free()
-{
-	return 0;
+{	
+	int largestBlock = 0;
+	struct *memoryList trav = head;
+	while(trav!=NULL)
+	{
+		if(trav->size>largestBlock && trav->alloc==0){
+		largestBlock = trav->size;
+		}
+		trav = trav->next;
+	}
+	return largestBlock;
 }
 
 /* Number of free blocks smaller than "size" bytes. */
 int mem_small_free(int size)
 {
-	return 0;
-}       
+	int counter=0;
+	struct *memoryList trav;
+	while(trav!=NULL)
+	{
+		if (trav->alloc==0 && trav->size<size)
+		{
+			counter++;
+		}
+		trav = trav->next;		
+	}	
+	return counter;
+}      
 
 char mem_is_alloc(void *ptr)
-{
+{		
+	if (ptr->alloc==1)
+	{
+		return 1;
+	}
+	
         return 0;
 }
 
@@ -254,14 +290,15 @@ strategies strategyFromString(char * strategy)
 /* Use this function to print out the current contents of memory. */
 void print_memory()
 {
-	struct memoryList *trav;
+	struct memoryList *trav = head;
 	int counter = 0;
 	printf("### Printing memory-list ###\n");
-	for(trav=head; trav->next!=NULL; trav=trav->next)
+	while(trav!=NULL)
 		{
 		printf(" node number = %d\n size = %d\n last = %p\n next = %p\n this.ptr = %p\n", counter,trav->size, trav->last, trav->next, trav->ptr);
 		printf(" Is the node allocated: %d\n\n",trav->alloc );
 		counter++;
+		trav = trav->next;
 		}	
 	return;
 }
