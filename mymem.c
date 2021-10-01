@@ -50,8 +50,8 @@ void initmem(strategies strategy, size_t sz)
 	/* 
 	Release any memory previously allocated and assigned 
 	in case this is not the first time initmem is called */
-	memoryList *trav;
 	if(head!=NULL){
+		memoryList *trav;
 		for(trav=head; trav->next!=NULL; trav=trav->next){
 			free(trav->last);
 			free(trav);
@@ -70,6 +70,7 @@ void initmem(strategies strategy, size_t sz)
 	head->size = sz; // First block size is equal to size_t sz given in initmem()
 	head->alloc = 0;  // Not allocated
 	head->ptr = myMemory;  // points to the same memory adress as the memory pool
+	print_memory();
 }
 
 /* Allocate a block of memory with the requested size.
@@ -81,7 +82,7 @@ void initmem(strategies strategy, size_t sz)
 void *mymalloc(size_t requested)
 {
 	assert((int)myStrategy > 0);
-	memoryList *trav =head;
+	memoryList *trav = head;
 	switch (myStrategy)
 	  {
 	  case NotSet: 
@@ -92,18 +93,20 @@ void *mymalloc(size_t requested)
 			{
 				if(trav->size>=requested){
 					memoryList *new = malloc(sizeof (memoryList));
-					new->size = trav->size-requested;
-					new->last = trav->ptr;
+					// update ptr's
 					new->next = NULL;
-					new->alloc = 0;
-
-					trav->size = requested;
+					new->ptr = trav->ptr+requested;
+					new->last = trav;
+					trav->next = new;
+					// update alloc
 					trav->alloc = 1;
-					trav->next = new->ptr;
-					trav->last = NULL;		
+					new->alloc = 0;
+					// update size
+					new->size = trav->size-requested;
+					trav->size = requested;	
 				}
 			}
-			trav = trav->next;
+		trav = trav->next;
 		}
 	            return NULL;
 	  case Best:
