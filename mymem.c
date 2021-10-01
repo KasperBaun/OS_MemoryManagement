@@ -9,7 +9,7 @@
 /* The main structure for implementing memory allocation.
  * You may change this to fit your implementation.
  */
-struct memoryList
+typedef struct memoryList
 {
   // doubly-linked list
   struct memoryList *last;
@@ -19,12 +19,12 @@ struct memoryList
   char alloc;          // 1 if this block is allocated,
                        // 0 if this block is free.
   void *ptr;           // location of block in memory pool.
-} MemoryList;
+} memoryList;
 strategies myStrategy = NotSet;    // Current strategy
 size_t mySize;
 void *myMemory = NULL;
 
-static struct memoryList *head;
+static memoryList *head;
 
 
 /* initmem must be called prior to mymalloc and myfree.
@@ -50,7 +50,7 @@ void initmem(strategies strategy, size_t sz)
 	/* 
 	Release any memory previously allocated and assigned 
 	in case this is not the first time initmem is called */
-	struct memoryList *trav;
+	memoryList *trav;
 	if(head!=NULL){
 		for(trav=head; trav->next!=NULL; trav=trav->next){
 			free(trav->last);
@@ -64,7 +64,7 @@ void initmem(strategies strategy, size_t sz)
 	/*  Assign memory space on heap for myMemory 
 		and create new node head and attach*/
 	myMemory = malloc(mySize);	
-	head = (struct memoryList*) malloc(sizeof (struct memoryList));
+	head = (memoryList*) malloc(sizeof (memoryList));
 	head->last = NULL; 
 	head->next = NULL;
 	head->size = sz; // First block size is equal to size_t sz given in initmem()
@@ -81,29 +81,29 @@ void initmem(strategies strategy, size_t sz)
 void *mymalloc(size_t requested)
 {
 	assert((int)myStrategy > 0);
-	struct memoryList *trav;
+	memoryList *trav =head;
 	switch (myStrategy)
 	  {
 	  case NotSet: 
 	            return NULL;
 	  case First:
-		for(trav=head; trav->next!=NULL;trav=trav->next){
+		while(trav!=NULL){
 			if (trav->alloc==0)
 			{
 				if(trav->size>=requested){
-					struct memoryList *new = malloc(sizeof (struct memoryList));
-					trav->alloc = 1;
-					trav->size = requested;
-					trav->next = new->ptr;		
-
+					memoryList *new = malloc(sizeof (memoryList));
 					new->size = trav->size-requested;
 					new->last = trav->ptr;
 					new->next = NULL;
 					new->alloc = 0;
-					return new->ptr;
+
+					trav->size = requested;
+					trav->alloc = 1;
+					trav->next = new->ptr;
+					trav->last = NULL;		
 				}
 			}
-			
+			trav = trav->next;
 		}
 	            return NULL;
 	  case Best:
@@ -120,7 +120,37 @@ void *mymalloc(size_t requested)
 /* Frees a block of memory previously allocated by mymalloc. */
 void myfree(void* block)
 {
-	return;
+	memoryList *trav = head;
+	while (1)
+	{
+		if(trav->ptr==block)
+		{
+			trav->alloc = 0; // De-allocate trav
+			if (trav->last) // If trav is not head
+			{
+				if (!trav->last->alloc) // And trav->last is not allocated
+				{	
+					// Update  pointers and size
+					trav->last->next = trav->next;
+					trav->last->size += trav->size;
+
+					if(trav->next) // If trav has next
+					{
+						trav->next->last = trav->last;
+					}
+					free(trav);
+					break;
+				}
+			}
+		}
+			if (trav->next!=NULL) // If end of dll is not reached
+			{
+				trav = trav->next; // Set trav to trav->next
+			} 	else
+				{
+				break;
+				}			
+	}
 }
 
 /****** Memory status/property functions ******
@@ -133,7 +163,7 @@ void myfree(void* block)
 int mem_holes()
 {	//TODO: Ask buphjit if this is supposed to calculate contiguos ares of free space or not?
 	int counter=0;
-	struct memoryList *trav = head;
+	memoryList *trav = head;
 	while(trav!=NULL)
 	{
 		if (trav->alloc==0)
@@ -149,7 +179,7 @@ int mem_holes()
 int mem_allocated()
 {
 	int counter=0;
-	struct memoryList *trav = head;
+	memoryList *trav = head;
 	while(trav!=NULL)
 	{
 		if (trav->alloc==1)
@@ -165,7 +195,7 @@ int mem_allocated()
 int mem_free()
 {
 	int counter=0;
-	struct memoryList *trav = head;
+	memoryList *trav = head;
 	while(trav!=NULL)
 	{
 		if (trav->alloc==0)
@@ -181,7 +211,7 @@ int mem_free()
 int mem_largest_free()
 {	
 	int largestBlock = 0;
-	struct memoryList *trav = head;
+	memoryList *trav = head;
 	while(trav!=NULL)
 	{
 		if(trav->size>largestBlock && trav->alloc==0){
@@ -196,7 +226,7 @@ int mem_largest_free()
 int mem_small_free(int size)
 {
 	int counter=0;
-	struct memoryList *trav = head;
+	memoryList *trav = head;
 	while(trav!=NULL)
 	{
 		if (trav->alloc==0 && trav->size<size)
@@ -210,7 +240,7 @@ int mem_small_free(int size)
 
 char mem_is_alloc(void *ptr)
 {
-	struct memoryList *trav = head;
+	memoryList *trav = head;
 	while(trav!=NULL)
 	{
 		if (trav->ptr==ptr)
@@ -293,7 +323,7 @@ strategies strategyFromString(char * strategy)
 /* Use this function to print out the current contents of memory. */
 void print_memory()
 {
-	struct memoryList *trav = head;
+	memoryList *trav = head;
 	int counter = 0;
 	printf("### Printing memory-list ###\n");
 	while(trav!=NULL)
