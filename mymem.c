@@ -122,37 +122,8 @@ void *mymalloc(size_t requested)
 /* Frees a block of memory previously allocated by mymalloc. */
 void myfree(void* block)
 {
-	memoryList *trav = head;
-	while (1)
-	{
-		if(trav->ptr==block)
-		{
-			trav->alloc = 0; // De-allocate trav
-			if (trav->last) // If trav is not head
-			{
-				if (!trav->last->alloc) // And trav->last is not allocated
-				{	
-					// Update  pointers and size
-					trav->last->next = trav->next;
-					trav->last->size += trav->size;
+	
 
-					if(trav->next) // If trav has next
-					{
-						trav->next->last = trav->last;
-					}
-					free(trav);
-					break;
-				}
-			}
-		}
-			if (trav->next!=NULL) // If end of dll is not reached
-			{
-				trav = trav->next; // Set trav to trav->next
-			} 	else
-				{
-				break;
-				}			
-	}
 }
 
 /****** Memory status/property functions ******
