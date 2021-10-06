@@ -122,7 +122,29 @@ void *mymalloc(size_t requested)
 /* Frees a block of memory previously allocated by mymalloc. */
 void myfree(void* block)
 {
-	
+	memoryList *trav = head;
+	while(trav != NULL){
+		// We found the block in our memoryList
+		if(trav->ptr == block){
+			// Checking for free adjacent block
+			if(trav->last->alloc == 0){
+				//Block left of trav is not allocated
+				trav->last->next = trav->next;
+				trav->last->size = trav->last->size + trav->size;
+				trav->next->last = trav->last;
+				memoryList *temp = trav->last;
+				free(trav);
+				trav = temp;
+			}
+			if(trav->next->alloc == 0){
+				//Block right of trav is not allocated
+				//TODO: Implement this
+			}
+			//No free adjacent blocks
+			trav->alloc = 0;
+		}
+		trav = trav->next;
+	}
 
 }
 
@@ -340,9 +362,12 @@ void try_mymem(int argc, char **argv) {
 	a = mymalloc(100);
 	b = mymalloc(100);
 	c = mymalloc(100);
-	myfree(b);
-	d = mymalloc(50);
 	myfree(a);
+	print_memory();
+	myfree(b);
+	print_memory();
+	d = mymalloc(50);
+	myfree(d);
 	e = mymalloc(25);
 	
 	print_memory();
