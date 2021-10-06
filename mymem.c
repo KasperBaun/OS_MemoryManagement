@@ -88,16 +88,16 @@ void *mymalloc(size_t requested)
 	            return NULL;
 	  case First:
 		while(trav!=NULL){
-			if (trav->alloc==0 && trav->size>requested)
+			if (trav->alloc==0 && trav->size > requested)
 			{
 				//In this scope, we have found a block not allocated with enough size
 
 				// Checking if trav(current block)==head
 				if (trav->last == NULL)
-				{
+				{	// Create new node with size = requested and append the remaining free memory to this block
 					memoryList *new = malloc(sizeof(memoryList));
 					new->size = trav->size - requested;
-					new->alloc= 0;
+					new->alloc = 0;
 					new->last = trav;
 					new->next = NULL;
 					new->ptr = trav->ptr+requested;
@@ -108,20 +108,42 @@ void *mymalloc(size_t requested)
 					break;
 				}
 				// Checking if trav(current block)==tail
-				if(trav->next==NULL){
+				if(trav->next == NULL){
+					// Create new node with size = requested and append it to tail->last and update pointers to tail
 					memoryList *new = malloc(sizeof(memoryList));
-					new->next = trav;
-					new->last = trav->last;
-					new->size = requested;
-					new->alloc = 1;
-					new->ptr = trav->ptr;
+					new->size = trav->size-requested;
+					new->alloc = 0;
+					new->next = NULL;
+					new->ptr = trav->ptr+requested;
+					new->last = trav;
 
-					trav->size = trav->size-requested;
-					trav->last = new;
-					trav->ptr = trav->ptr+requested;
-					trav->size = trav->size-requested;
+					trav->alloc = 1;
+					trav->next = new;
+					trav->size = requested;
+					break;
 				}
-				
+
+				// We found a free block in the middle of list - update ptr's accordingly
+				if(trav->next != NULL && trav->last != NULL){
+					if(trav->size == requested){
+					// If the block is a perfect fit - we cant create a new block with free space next to it
+					trav->alloc = 1;
+					break;
+					} 
+										
+					// Trav->size is larger than requested (see the if() loop @ line 91) so we need to create a new node with the remaining free space
+					memoryList *new = malloc(sizeof(memoryList));
+					new->size = trav->size-requested;
+					new->alloc = 0;
+					new->next = trav->next;
+					new->last = trav;
+					new->ptr = trav->ptr+requested;
+
+					trav->alloc = 1;
+					trav->size = requested;
+					trav->next = new;
+					break;						
+				}				
 			}
 		trav = trav->next;
 		}
@@ -161,9 +183,8 @@ void myfree(void* block)
 				trav->size = trav->size + trav->next->size;
 				trav->next->next->last = trav;
 				memoryList *temp = trav->next;
-				trav->next = trav->next->next;
-				free(temp);
-
+				free(trav->next);
+				trav->next = temp->next;
 			}
 			//No free adjacent blocks
 			trav->alloc = 0;
@@ -383,19 +404,12 @@ void try_mymem(int argc, char **argv) {
 	/* A simple example.  
 	   Each algorithm should produce a different layout. */
 	initmem(strat,500);
-	
 	a = mymalloc(100);
 	b = mymalloc(100);
 	c = mymalloc(100);
 	myfree(a);
-	print_memory();
+	mymalloc(50);
 	myfree(b);
 	print_memory();
-	d = mymalloc(50);
-	myfree(d);
-	e = mymalloc(25);
-	
-	print_memory();
 	print_memory_status();
-	
 }
