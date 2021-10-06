@@ -105,6 +105,8 @@ void *mymalloc(size_t requested)
 					trav->alloc = 1;
 					trav->size = requested;
 					trav->next = new;
+					return trav;
+
 					break;
 				}
 				// Checking if trav(current block)==tail
@@ -120,6 +122,7 @@ void *mymalloc(size_t requested)
 					trav->alloc = 1;
 					trav->next = new;
 					trav->size = requested;
+					return trav;
 					break;
 				}
 
@@ -128,6 +131,7 @@ void *mymalloc(size_t requested)
 					if(trav->size == requested){
 					// If the block is a perfect fit - we cant create a new block with free space next to it
 					trav->alloc = 1;
+					return trav;
 					break;
 					} 
 										
@@ -142,6 +146,7 @@ void *mymalloc(size_t requested)
 					trav->alloc = 1;
 					trav->size = requested;
 					trav->next = new;
+					return trav;
 					break;						
 				}				
 			}
@@ -164,10 +169,12 @@ void myfree(void* block)
 {
 	memoryList *trav = head;
 	while(trav != NULL){
+		printf("trav's ptr : %p\n", trav);
 		// We found the block in our memoryList
-		if(trav->ptr == block){
+		if(trav == block){
 			// Checking for free adjacent block
-			if(trav->last->alloc == 0){
+			if(trav->last != NULL && trav->last->alloc == 0){
+				printf("block left of trav is free @ 177\n");
 				//Block left of trav is not allocated
 				trav->alloc = 0;
 				trav->last->next = trav->next;
@@ -177,7 +184,8 @@ void myfree(void* block)
 				free(trav);
 				trav = temp;
 			}
-			if(trav->next->alloc == 0){
+			if(trav->next != NULL &&trav->next->alloc == 0){
+				printf("block right of trav is free @ 187\n");
 				//Block right of trav is not allocated
 				trav->alloc = 0;
 				trav->size = trav->size + trav->next->size;
@@ -188,7 +196,9 @@ void myfree(void* block)
 			}
 			//No free adjacent blocks
 			trav->alloc = 0;
+			break;
 		}
+		printf("right before trav = trav->next\n");
 		trav = trav->next;
 	}
 
@@ -406,10 +416,13 @@ void try_mymem(int argc, char **argv) {
 	initmem(strat,500);
 	a = mymalloc(100);
 	b = mymalloc(100);
-	c = mymalloc(100);
+	printf("b's ptr : %p \n",b);
+	print_memory();
+	printf("a's ptr : %p \n",a);
 	myfree(a);
-	mymalloc(50);
-	myfree(b);
+	c = mymalloc(75);
+	d = mymalloc(50);
+	e = mymalloc(125);
 	print_memory();
 	print_memory_status();
 }
