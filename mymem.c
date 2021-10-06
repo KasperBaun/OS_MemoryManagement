@@ -70,7 +70,6 @@ void initmem(strategies strategy, size_t sz)
 	head->size = sz; // First block size is equal to size_t sz given in initmem()
 	head->alloc = 0;  // Not allocated
 	head->ptr = myMemory;  // points to the same memory adress as the memory pool
-	print_memory();
 }
 
 /* Allocate a block of memory with the requested size.
@@ -164,7 +163,7 @@ void myfree(void* block)
 
 /* Get the number of contiguous areas of free space in memory. */
 int mem_holes()
-{	//TODO: Ask buphjit if this is supposed to calculate contiguos ares of free space or not?
+{	//TODO: Ask buphjit if this is supposed to calculate contiguos ares of free space? Is this to be used for compacting?
 	int counter=0;
 	memoryList *trav = head;
 	while(trav!=NULL)
@@ -199,9 +198,9 @@ int mem_free()
 {
 	int counter=0;
 	memoryList *trav = head;
-	while(trav!=NULL)
+	while(trav != NULL)
 	{
-		if (trav->alloc==0)
+		if (trav->alloc == 0)
 		{
 			counter = counter+trav->size;
 		}
@@ -215,9 +214,9 @@ int mem_largest_free()
 {	
 	int largestBlock = 0;
 	memoryList *trav = head;
-	while(trav!=NULL)
+	while(trav != NULL)
 	{
-		if(trav->size>largestBlock && trav->alloc==0){
+		if(trav->size > largestBlock && trav->alloc == 0){
 		largestBlock = trav->size;
 		}
 		trav = trav->next;
@@ -365,7 +364,6 @@ void try_mymem(int argc, char **argv) {
 	
 	/* A simple example.  
 	   Each algorithm should produce a different layout. */
-	
 	initmem(strat,500);
 	
 	a = mymalloc(100);
