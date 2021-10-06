@@ -169,12 +169,10 @@ void myfree(void* block)
 {
 	memoryList *trav = head;
 	while(trav != NULL){
-		printf("trav's ptr : %p\n", trav);
 		// We found the block in our memoryList
 		if(trav == block){
 			// Checking for free adjacent block
 			if(trav->last != NULL && trav->last->alloc == 0){
-				printf("block left of trav is free @ 177\n");
 				//Block left of trav is not allocated
 				trav->alloc = 0;
 				trav->last->next = trav->next;
@@ -185,7 +183,6 @@ void myfree(void* block)
 				trav = temp;
 			}
 			if(trav->next != NULL &&trav->next->alloc == 0){
-				printf("block right of trav is free @ 187\n");
 				//Block right of trav is not allocated
 				trav->alloc = 0;
 				trav->size = trav->size + trav->next->size;
@@ -198,7 +195,6 @@ void myfree(void* block)
 			trav->alloc = 0;
 			break;
 		}
-		printf("right before trav = trav->next\n");
 		trav = trav->next;
 	}
 
@@ -416,13 +412,10 @@ void try_mymem(int argc, char **argv) {
 	initmem(strat,500);
 	a = mymalloc(100);
 	b = mymalloc(100);
-	printf("b's ptr : %p \n",b);
-	print_memory();
-	printf("a's ptr : %p \n",a);
-	myfree(a);
 	c = mymalloc(75);
 	d = mymalloc(50);
 	e = mymalloc(125);
+	myfree(e);
 	print_memory();
 	print_memory_status();
 }
