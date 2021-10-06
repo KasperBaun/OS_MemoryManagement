@@ -90,10 +90,10 @@ void *mymalloc(size_t requested)
 		while(trav!=NULL){
 			if (trav->alloc==0 && trav->size>requested)
 			{
-				//Found a block not allocated with enough size
+				//In this scope, we have found a block not allocated with enough size
 
-				// trav = head
-				if (trav->ptr==head->ptr)
+				// Checking if trav(current block)==head
+				if (trav->last == NULL)
 				{
 					memoryList *new = malloc(sizeof(memoryList));
 					new->size = trav->size - requested;
@@ -105,10 +105,21 @@ void *mymalloc(size_t requested)
 					trav->alloc = 1;
 					trav->size = requested;
 					trav->next = new;
+					break;
 				}
-				// trav = free block in list
-				if(trav->last != NULL && trav->next != NULL){
-					trav->alloc = 1;
+				// Checking if trav(current block)==tail
+				if(trav->next==NULL){
+					memoryList *new = malloc(sizeof(memoryList));
+					new->next = trav;
+					new->last = trav->last;
+					new->size = requested;
+					new->alloc = 1;
+					new->ptr = trav->ptr;
+
+					trav->size = trav->size-requested;
+					trav->last = new;
+					trav->ptr = trav->ptr+requested;
+					trav->size = trav->size-requested;
 				}
 				
 			}
