@@ -50,14 +50,16 @@ void initmem(strategies strategy, size_t sz)
 	/* 
 	Release any memory previously allocated and assigned 
 	in case this is not the first time initmem is called */
-	if(head!=NULL){
-		memoryList *trav;
-		for(trav=head; trav->next!=NULL; trav=trav->next){
-			free(trav->last);
-			free(trav);
-		}
-	}
 	if(myMemory!=NULL) free(myMemory);
+	if(head!=NULL){
+		memoryList *trav = head;
+		while (trav->next!=NULL)
+		{
+			trav=trav->next;
+			free(trav->last);
+		}
+		free(trav);
+	}
 
 
 
@@ -308,7 +310,7 @@ char mem_is_alloc(void *ptr)
 		}
 		trav = trav->next;		
 	}	
-	return;
+	return 0;
 }
 
 /* 
