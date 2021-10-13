@@ -52,15 +52,17 @@ void initmem(strategies strategy, size_t sz)
 	in case this is not the first time initmem is called */
 	if(myMemory!=NULL) free(myMemory);
 	if(head!=NULL){
-		memoryList *trav = head;
-		while (trav->next!=NULL)
-		{
-			trav=trav->next;
-			free(trav->last);
-		}
+		memoryList *trav;
+		for(trav=head; trav->next!=NULL; trav=trav->next){
+			if (trav->last != NULL)
+			{
+				free(trav->last);
+			}
+			
+		}	
 		free(trav);
 	}
-
+	
 
 
 	/*  Assign memory space on heap for myMemory 
@@ -185,12 +187,14 @@ void myfree(void* block)
 			// Checking for free adjacent block
 			if(trav->last != NULL && trav->last->alloc == 0){
 				//Block left of trav is not allocated - update size first then pointers, then free trav
-				trav->last->size = trav->last->size + trav->size;
-				trav->last->next = trav->next;
-				trav->next->last = trav->last;
-				memoryList *temp = trav->last;
-				free(trav);
-				trav = temp;
+				memoryList *temp = trav;
+				trav = trav->last;
+				trav->size = trav->size+trav->next->size;
+				trav->next = trav->next->next;
+				trav->next->next->last = trav;
+				free(temp);
+
+			
 			}
 			if(trav->next != NULL && trav->next->alloc == 0){
 				//Block right of trav is not allocated
@@ -434,10 +438,13 @@ void try_mymem(int argc, char **argv) {
 	initmem(strat,100);
 	a = mymalloc(10);
 	b = mymalloc(1);
-	print_memory();
-	myfree(a);
-	print_memory();
 	c = mymalloc(1);
 	print_memory();
 	print_memory_status();
+	initmem(strat,500);
+	d = mymalloc(100);
+	e = mymalloc(50);
+	a = mymalloc(150);
+	b = mymalloc(150);
+	print_memory();
 }
