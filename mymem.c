@@ -99,7 +99,9 @@ void *mymalloc(size_t requested)
 					new->size = trav->size - requested;
 					new->alloc = 0;
 					new->last = trav;
-					new->next = NULL;
+					if(trav->next==NULL){
+						new->next=NULL;
+					} else	new->next = trav->next;
 					new->ptr = trav->ptr+requested;
 
 					trav->alloc = 1;
@@ -286,7 +288,7 @@ int mem_small_free(int size)
 	memoryList *trav = head;
 	while(trav!=NULL)
 	{
-		if (trav->alloc==0 && trav->size<size)
+		if (trav->alloc==0 && trav->size<=size)
 		{
 			counter++;
 		}
@@ -302,11 +304,11 @@ char mem_is_alloc(void *ptr)
 	{
 		if (trav->ptr==ptr)
 		{
-			return 1;
+			return trav->alloc;
 		}
 		trav = trav->next;		
 	}	
-	return 0;
+	return;
 }
 
 /* 
