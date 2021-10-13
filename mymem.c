@@ -185,6 +185,21 @@ void myfree(void* block)
 		if(trav->ptr == block){
 			
 			// Checking for free adjacent block
+			
+			// Free adjacent blocks on both sides of trav
+			if(trav->last != NULL && trav->last->alloc == 0 && trav->next != NULL && trav->next->alloc == 0){
+				trav->last->alloc = 0;
+				trav->last->size = trav->last->size+trav->size+trav->next->size;
+				trav->last->next = trav->next->next;
+				trav->next->next->last = trav->last;
+				memoryList *temp = trav;
+				trav = trav->last;
+				free(temp->next);
+				free(temp);
+				break;
+			}
+			
+			
 			if(trav->last != NULL && trav->last->alloc == 0){
 				//Block left of trav is not allocated - update size first then pointers, then free trav
 				memoryList *temp = trav;
@@ -211,7 +226,6 @@ void myfree(void* block)
 			
 			//No free adjacent blocks
 			trav->alloc = 0;
-			break;
 		}
 		trav = trav->next;
 	}
@@ -434,17 +448,34 @@ void try_mymem(int argc, char **argv) {
 	d = mymalloc(101);
 	e = mymalloc(99);
 	//myfree(e);*/
-
+	/*
 	initmem(strat,100);
 	a = mymalloc(10);
 	b = mymalloc(1);
+	myfree(b);
 	c = mymalloc(1);
 	print_memory();
 	print_memory_status();
+
 	initmem(strat,500);
 	d = mymalloc(100);
 	e = mymalloc(50);
+	myfree(d);
+	print_memory();
+	myfree(e);
 	a = mymalloc(150);
 	b = mymalloc(150);
+	print_memory();
+	initmem(strat, 10000);
+	print_memory();*/
+	initmem(strat,500);
+    a = mymalloc(30);
+    b = mymalloc(50);
+    myfree(a);
+    c = mymalloc(120);
+    free(c);
+    d = mymalloc(100);
+    free(b);
+    e = mymalloc(20);
 	print_memory();
 }
