@@ -105,7 +105,7 @@ void *mymalloc(size_t requested)
 					trav->alloc = 1;
 					trav->size = requested;
 					trav->next = new;
-					return trav;
+					return trav->ptr;
 
 					break;
 				}
@@ -120,9 +120,9 @@ void *mymalloc(size_t requested)
 					new->last = trav;
 
 					trav->alloc = 1;
-					trav->next = new;
 					trav->size = requested;
-					return trav;
+					trav->next = new;
+					return trav->ptr;
 					break;
 				}
 
@@ -170,26 +170,27 @@ void myfree(void* block)
 	memoryList *trav = head;
 	while(trav != NULL){
 		// We found the block in our memoryList
-		if(trav == block){
+		if(trav->ptr == block){
 			// Checking for free adjacent block
 			if(trav->last != NULL && trav->last->alloc == 0){
-				//Block left of trav is not allocated
-				trav->alloc = 0;
-				trav->last->next = trav->next;
+				//Block left of trav is not allocated - update size first then pointers, then free trav
 				trav->last->size = trav->last->size + trav->size;
+				trav->last->next = trav->next;
 				trav->next->last = trav->last;
 				memoryList *temp = trav->last;
 				free(trav);
 				trav = temp;
 			}
-			if(trav->next != NULL &&trav->next->alloc == 0){
+			if(trav->next != NULL && trav->next->alloc == 0){
 				//Block right of trav is not allocated
-				trav->alloc = 0;
-				trav->size = trav->size + trav->next->size;
-				trav->next->next->last = trav;
+				trav->next->size = trav->size + trav->next->size;
+				trav->last->next = trav->next;
+				trav->next->last = trav->last;
+				// Pointer is moved to the start of trav
+				trav->next->ptr = trav->ptr;
 				memoryList *temp = trav->next;
-				free(trav->next);
-				trav->next = temp->next;
+				free(trav);
+				trav = temp->next;
 			}
 			//No free adjacent blocks
 			trav->alloc = 0;
