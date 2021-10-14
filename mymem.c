@@ -128,6 +128,41 @@ void *findFirst(size_t requested){
 	}
 	return NULL;
 }
+// Find a suitable free block with memory algorithm Best-fit
+void *findBest(size_t requested){
+	memoryList *trav = head;
+	memoryList *bestFit = NULL;
+	int sizeDiff = __INT32_MAX__;
+	while(trav!=NULL){
+		if(trav->size>=requested && trav->alloc==0){
+			if (sizeDiff > trav->size-requested)
+			{
+				sizeDiff = trav->size-requested;
+				bestFit = trav;
+			}			
+		}
+		trav = trav->next;	
+	}
+	return bestFit;
+}
+// Find a suitable free block with memory algorithm Worst-fit
+void *findWorst(size_t requested){
+	memoryList *trav = head;
+	memoryList *worstFit = NULL;
+	int worst = 0;
+	while(trav!=NULL){
+		if(trav->size>=requested && trav->alloc==0){
+			if (trav->size > worst)
+			{
+				worst = trav->size;
+				worstFit = trav;
+			}			
+		}
+		trav = trav->next;	
+	}
+	return worstFit;
+}
+
 
 /* Allocate a block of memory with the requested size.
  *  If the requested block is not available, mymalloc returns NULL.
@@ -145,9 +180,11 @@ void *mymalloc(size_t requested)
 			suitableBlock = findFirst(requested);
 			break;
 	  case Best:
-	            return NULL;
+	  		suitableBlock = findBest(requested);
+	        break;
 	  case Worst:
-	            return NULL;
+	        suitableBlock = findWorst(requested);
+	        break;
 	  case Next:
 	            return NULL;
 	  }
@@ -416,7 +453,7 @@ void print_memory_status()
  */
 void try_mymem(int argc, char **argv) {
         strategies strat;
-	void *a, *b, *c, *d, *e;
+	void *a, *b, *c, *d, *e, *f;
 	if(argc > 1)
 	  strat = strategyFromString(argv[1]);
 	else
@@ -426,14 +463,13 @@ void try_mymem(int argc, char **argv) {
 	/* A simple example.  
 	   Each algorithm should produce a different layout. */
 	initmem(strat,500);
-    a = mymalloc(30);
-    b = mymalloc(50);
-    myfree(a);
-    c = mymalloc(120);
-    myfree(c);
-    d = mymalloc(150);
+   	a = mymalloc(100);
+	b = mymalloc(70);
+	c = mymalloc(80);
+	d = mymalloc(75);
+	e = mymalloc(100);
 	myfree(b);
-    e = mymalloc(20);
-	//initmem(strat,400);
+	myfree(d);
+	f = mymalloc(65);
 	print_memory();
 }
