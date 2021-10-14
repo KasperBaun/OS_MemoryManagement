@@ -170,12 +170,7 @@ void *mymalloc(size_t requested)
 	            return NULL;
 	  case First:
 			suitableBlock = findFirst(requested);
-			if((suitableBlock==NULL)){ 
-				printf("No suitable block found for strategy First \n"); 
-				return NULL;
-			}	
-			return allocateBlock(suitableBlock, requested);
-	            
+			break;
 	  case Best:
 	            return NULL;
 	  case Worst:
@@ -183,7 +178,20 @@ void *mymalloc(size_t requested)
 	  case Next:
 	            return NULL;
 	  }
-	return NULL;
+
+	// There was no unallocated block large enough for requested.
+	if((suitableBlock==NULL)){ 
+		printf("No suitable block found for strategy %s \n",strategy_name(myStrategy)); 
+		return NULL;
+	}
+
+	// If the block found is larger than requested we need to insert a new adjacent block with the leftover memory space	
+	if(suitableBlock->size > requested)	
+		return allocateBlock(suitableBlock, requested);
+
+	// If the block size found is == requested, we dont need to create a new block in our memory so we just set suitableBlock->alloc = 1;
+	suitableBlock->alloc = 1;
+	return suitableBlock->ptr;	  
 }
 
 
@@ -195,7 +203,7 @@ void myfree(void* block)
 		// We found the block in our memoryList
 		if(trav->ptr == block){
 			
-			// Checking for free adjacent block
+			// Checking for free adjacent blocks
 			
 			// Free adjacent blocks on both sides of trav
 			if(trav->last != NULL && trav->last->alloc == 0 && trav->next != NULL && trav->next->alloc == 0){
