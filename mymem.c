@@ -76,6 +76,85 @@ void initmem(strategies strategy, size_t sz)
 	head->ptr = myMemory;  // points to the same memory adress as the memory pool
 }
 
+// Allocate a block in the DLL and update pointers accordingly
+void *allocateBlock(memoryList *suitableBlock, size_t requested){
+	
+				// Checking if trav(current block)==head
+				if (suitableBlock->last == NULL && suitableBlock->size > requested)
+				{	// Create new node with size = requested and append the remaining free memory to this block
+					memoryList *new = malloc(sizeof(memoryList));
+					new->size = suitableBlock->size - requested;
+					new->alloc = 0;
+					new->last = suitableBlock;
+					if(suitableBlock->next==NULL){
+						new->next=NULL;
+					} else	new->next = suitableBlock->next;
+					new->ptr = suitableBlock->ptr+requested;
+
+					suitableBlock->alloc = 1;
+					suitableBlock->size = requested;
+					suitableBlock->next = new;
+					return suitableBlock->ptr;
+				}
+				// Checking if trav(current block)==tail
+				if(suitableBlock->next == NULL){
+					if(suitableBlock->size == requested){
+						suitableBlock->alloc = 1;
+						return suitableBlock->ptr;
+					}
+					
+					// Create new node with size = requested and append it to tail->last and update pointers to tail
+					memoryList *new = malloc(sizeof(memoryList));
+					new->size = suitableBlock->size-requested;
+					new->alloc = 0;
+					new->next = NULL;
+					new->ptr = suitableBlock->ptr+requested;
+					new->last = suitableBlock;
+
+					suitableBlock->alloc = 1;
+					suitableBlock->size = requested;
+					suitableBlock->next = new;
+					return suitableBlock->ptr;
+				}
+
+				// We found a free block in the middle of list - update ptr's accordingly
+				if(suitableBlock->next != NULL && suitableBlock->last != NULL){
+					
+					// If the block is a perfect fit - we cant create a new block with free space next to it
+					if(suitableBlock->size == requested){
+					suitableBlock->alloc = 1;
+					return suitableBlock->ptr;
+					} 
+										
+					// Block->size is larger than requested so we need to create an adjacent new block with the remaining free space
+					memoryList *new = malloc(sizeof(memoryList));
+					new->size = suitableBlock->size-requested;
+					new->alloc = 0;
+					new->ptr = suitableBlock->ptr+requested;
+					new->next = suitableBlock->next;
+					new->last = suitableBlock;
+
+					suitableBlock->alloc = 1;
+					suitableBlock->size = requested;
+					suitableBlock->next = new;
+					return suitableBlock->ptr;						
+				}
+			return NULL;					
+			}
+
+// Find a suitable free block with memory algorithm First-fit
+void *findFirst(size_t requested){
+	memoryList *trav = head;
+	while(trav!=NULL){
+		if(trav->size>=requested && trav->alloc==0){
+			// Found a suitable block
+			return trav;
+		}
+		trav = trav->next;	
+	}
+	return NULL;
+}
+
 /* Allocate a block of memory with the requested size.
  *  If the requested block is not available, mymalloc returns NULL.
  *  Otherwise, it returns a pointer to the newly allocated block.
@@ -84,87 +163,19 @@ void initmem(strategies strategy, size_t sz)
 
 void *mymalloc(size_t requested)
 {
-	assert((int)myStrategy > 0);
-	memoryList *trav = head;
+	memoryList *suitableBlock=NULL;
 	switch (myStrategy)
 	  {
 	  case NotSet: 
 	            return NULL;
 	  case First:
-		while(trav!=NULL){
-			if (trav->alloc==0 && trav->size >= requested)
-			{
-				//In this scope, we have found a block not allocated with enough size
-
-				// Checking if trav(current block)==head
-				if (trav->last == NULL && trav->size > requested)
-				{	// Create new node with size = requested and append the remaining free memory to this block
-					memoryList *new = malloc(sizeof(memoryList));
-					new->size = trav->size - requested;
-					new->alloc = 0;
-					new->last = trav;
-					if(trav->next==NULL){
-						new->next=NULL;
-					} else	new->next = trav->next;
-					new->ptr = trav->ptr+requested;
-
-					trav->alloc = 1;
-					trav->size = requested;
-					trav->next = new;
-					return trav->ptr;
-
-					break;
-				}
-				// Checking if trav(current block)==tail
-				if(trav->next == NULL){
-					if(trav->size == requested){
-						trav->alloc = 1;
-						return trav->ptr;
-						break;
-					}
-					
-					// Create new node with size = requested and append it to tail->last and update pointers to tail
-					memoryList *new = malloc(sizeof(memoryList));
-					new->size = trav->size-requested;
-					new->alloc = 0;
-					new->next = NULL;
-					new->ptr = trav->ptr+requested;
-					new->last = trav;
-
-					trav->alloc = 1;
-					trav->size = requested;
-					trav->next = new;
-					return trav->ptr;
-					break;
-				}
-
-				// We found a free block in the middle of list - update ptr's accordingly
-				if(trav->next != NULL && trav->last != NULL){
-					
-					// If the block is a perfect fit - we cant create a new block with free space next to it
-					if(trav->size == requested){
-					trav->alloc = 1;
-					return trav->ptr;
-					break;
-					} 
-										
-					// Trav->size is larger than requested (see the if() loop @ line 91) so we need to create a new node with the remaining free space
-					memoryList *new = malloc(sizeof(memoryList));
-					new->size = trav->size-requested;
-					new->alloc = 0;
-					new->ptr = trav->ptr+requested;
-					new->next = trav->next;
-					new->last = trav;
-
-					trav->alloc = 1;
-					trav->size = requested;
-					trav->next = new;
-					return trav->ptr;						
-				}				
-			}
-		trav = trav->next;
-		}
-	            return NULL;
+			suitableBlock = findFirst(requested);
+			if((suitableBlock==NULL)){ 
+				printf("No suitable block found for strategy First \n"); 
+				return NULL;
+			}	
+			return allocateBlock(suitableBlock, requested);
+	            
 	  case Best:
 	            return NULL;
 	  case Worst:
