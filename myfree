@@ -1,0 +1,12 @@
+
+if(trav->last != NULL && trav->last->alloc == 0){
+				//Block left of trav is not allocated - update size first then pointers, then free trav
+				memoryList *temp = trav;
+				trav = trav->last;
+				trav->size = trav->size+trav->next->size;
+				trav->next = trav->next->next;
+				trav->next->next->last = trav;
+				free(temp);
+
+			
+			}

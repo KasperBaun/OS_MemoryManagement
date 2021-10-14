@@ -50,15 +50,19 @@ void initmem(strategies strategy, size_t sz)
 	/* 
 	Release any memory previously allocated and assigned 
 	in case this is not the first time initmem is called */
+	if(myMemory!=NULL) free(myMemory);
 	if(head!=NULL){
 		memoryList *trav;
 		for(trav=head; trav->next!=NULL; trav=trav->next){
-			free(trav->last);
-			free(trav);
-		}
+			if (trav->last != NULL)
+			{
+				free(trav->last);
+			}
+			
+		}	
+		free(trav);
 	}
-	if(myMemory!=NULL) free(myMemory);
-
+	
 
 
 	/*  Assign memory space on heap for myMemory 
@@ -70,7 +74,6 @@ void initmem(strategies strategy, size_t sz)
 	head->size = sz; // First block size is equal to size_t sz given in initmem()
 	head->alloc = 0;  // Not allocated
 	head->ptr = myMemory;  // points to the same memory adress as the memory pool
-	print_memory();
 }
 
 /* Allocate a block of memory with the requested size.
@@ -89,22 +92,75 @@ void *mymalloc(size_t requested)
 	            return NULL;
 	  case First:
 		while(trav!=NULL){
-			if (trav->alloc==0)
+			if (trav->alloc==0 && trav->size >= requested)
 			{
-				if(trav->size>=requested){
-					memoryList *new = malloc(sizeof (memoryList));
-					// update ptr's
+				//In this scope, we have found a block not allocated with enough size
+
+				// Checking if trav(current block)==head
+				if (trav->last == NULL && trav->size > requested)
+				{	// Create new node with size = requested and append the remaining free memory to this block
+					memoryList *new = malloc(sizeof(memoryList));
+					new->size = trav->size - requested;
+					new->alloc = 0;
+					new->last = trav;
+					if(trav->next==NULL){
+						new->next=NULL;
+					} else	new->next = trav->next;
+					new->ptr = trav->ptr+requested;
+
+					trav->alloc = 1;
+					trav->size = requested;
+					trav->next = new;
+					return trav->ptr;
+
+					break;
+				}
+				// Checking if trav(current block)==tail
+				if(trav->next == NULL){
+					if(trav->size == requested){
+						trav->alloc = 1;
+						return trav->ptr;
+						break;
+					}
+					
+					// Create new node with size = requested and append it to tail->last and update pointers to tail
+					memoryList *new = malloc(sizeof(memoryList));
+					new->size = trav->size-requested;
+					new->alloc = 0;
 					new->next = NULL;
 					new->ptr = trav->ptr+requested;
 					new->last = trav;
-					trav->next = new;
-					// update alloc
+
 					trav->alloc = 1;
-					new->alloc = 0;
-					// update size
-					new->size = trav->size-requested;
-					trav->size = requested;	
+					trav->size = requested;
+					trav->next = new;
+					return trav->ptr;
+					break;
 				}
+
+				// We found a free block in the middle of list - update ptr's accordingly
+				if(trav->next != NULL && trav->last != NULL){
+					
+					// If the block is a perfect fit - we cant create a new block with free space next to it
+					if(trav->size == requested){
+					trav->alloc = 1;
+					return trav->ptr;
+					break;
+					} 
+										
+					// Trav->size is larger than requested (see the if() loop @ line 91) so we need to create a new node with the remaining free space
+					memoryList *new = malloc(sizeof(memoryList));
+					new->size = trav->size-requested;
+					new->alloc = 0;
+					new->ptr = trav->ptr+requested;
+					new->next = trav->next;
+					new->last = trav;
+
+					trav->alloc = 1;
+					trav->size = requested;
+					trav->next = new;
+					return trav->ptr;						
+				}				
 			}
 		trav = trav->next;
 		}
@@ -124,36 +180,56 @@ void *mymalloc(size_t requested)
 void myfree(void* block)
 {
 	memoryList *trav = head;
-	while (1)
-	{
-		if(trav->ptr==block)
-		{
-			trav->alloc = 0; // De-allocate trav
-			if (trav->last) // If trav is not head
-			{
-				if (!trav->last->alloc) // And trav->last is not allocated
-				{	
-					// Update  pointers and size
-					trav->last->next = trav->next;
-					trav->last->size += trav->size;
-
-					if(trav->next) // If trav has next
-					{
-						trav->next->last = trav->last;
-					}
-					free(trav);
-					break;
-				}
-			}
-		}
-			if (trav->next!=NULL) // If end of dll is not reached
-			{
-				trav = trav->next; // Set trav to trav->next
-			} 	else
-				{
+	while(trav != NULL){
+		// We found the block in our memoryList
+		if(trav->ptr == block){
+			
+			// Checking for free adjacent block
+			
+			// Free adjacent blocks on both sides of trav
+			if(trav->last != NULL && trav->last->alloc == 0 && trav->next != NULL && trav->next->alloc == 0){
+				trav->last->alloc = 0;
+				trav->last->size = trav->last->size+trav->size+trav->next->size;
+				trav->last->next = trav->next->next;
+				trav->next->next->last = trav->last;
+				memoryList *temp = trav;
+				trav = trav->last;
+				free(temp->next);
+				free(temp);
 				break;
-				}			
+			}
+			
+			
+			if(trav->last != NULL && trav->last->alloc == 0){
+				//Block left of trav is not allocated - update size first then pointers, then free trav
+				memoryList *temp = trav;
+				trav = trav->last;
+				trav->size = trav->size+trav->next->size;
+				trav->next = trav->next->next;
+				trav->next->next->last = trav;
+				free(temp);
+
+			
+			}
+			if(trav->next != NULL && trav->next->alloc == 0){
+				//Block right of trav is not allocated
+				trav->alloc = 0;
+				trav->size = trav->size + trav->next->size;
+				memoryList *temp = trav->next;
+				if(trav->next->next!=NULL){
+					trav->next->next->last = trav;
+				}
+				trav->next = trav->next->next;
+				//println("Line 193 - Trav->next: %p \n",trav->next);
+				free(temp);
+			}
+			
+			//No free adjacent blocks
+			trav->alloc = 0;
+		}
+		trav = trav->next;
 	}
+
 }
 
 /****** Memory status/property functions ******
@@ -164,7 +240,7 @@ void myfree(void* block)
 
 /* Get the number of contiguous areas of free space in memory. */
 int mem_holes()
-{	//TODO: Ask buphjit if this is supposed to calculate contiguos ares of free space or not?
+{	//TODO: Ask buphjit if this is supposed to calculate contiguos ares of free space? Is this to be used for compacting?
 	int counter=0;
 	memoryList *trav = head;
 	while(trav!=NULL)
@@ -199,9 +275,9 @@ int mem_free()
 {
 	int counter=0;
 	memoryList *trav = head;
-	while(trav!=NULL)
+	while(trav != NULL)
 	{
-		if (trav->alloc==0)
+		if (trav->alloc == 0)
 		{
 			counter = counter+trav->size;
 		}
@@ -215,9 +291,9 @@ int mem_largest_free()
 {	
 	int largestBlock = 0;
 	memoryList *trav = head;
-	while(trav!=NULL)
+	while(trav != NULL)
 	{
-		if(trav->size>largestBlock && trav->alloc==0){
+		if(trav->size > largestBlock && trav->alloc == 0){
 		largestBlock = trav->size;
 		}
 		trav = trav->next;
@@ -232,7 +308,7 @@ int mem_small_free(int size)
 	memoryList *trav = head;
 	while(trav!=NULL)
 	{
-		if (trav->alloc==0 && trav->size<size)
+		if (trav->alloc==0 && trav->size<=size)
 		{
 			counter++;
 		}
@@ -248,7 +324,7 @@ char mem_is_alloc(void *ptr)
 	{
 		if (trav->ptr==ptr)
 		{
-			return 1;
+			return trav->alloc;
 		}
 		trav = trav->next;		
 	}	
@@ -365,18 +441,41 @@ void try_mymem(int argc, char **argv) {
 	
 	/* A simple example.  
 	   Each algorithm should produce a different layout. */
-	
-	initmem(strat,500);
-	
+	/*initmem(strat,500);
 	a = mymalloc(100);
 	b = mymalloc(100);
 	c = mymalloc(100);
+	d = mymalloc(101);
+	e = mymalloc(99);
+	//myfree(e);*/
+	/*
+	initmem(strat,100);
+	a = mymalloc(10);
+	b = mymalloc(1);
 	myfree(b);
-	d = mymalloc(50);
-	myfree(a);
-	e = mymalloc(25);
-	
+	c = mymalloc(1);
 	print_memory();
 	print_memory_status();
-	
+
+	initmem(strat,500);
+	d = mymalloc(100);
+	e = mymalloc(50);
+	myfree(d);
+	print_memory();
+	myfree(e);
+	a = mymalloc(150);
+	b = mymalloc(150);
+	print_memory();
+	initmem(strat, 10000);
+	print_memory();*/
+	initmem(strat,500);
+    a = mymalloc(30);
+    b = mymalloc(50);
+    myfree(a);
+    c = mymalloc(120);
+    free(c);
+    d = mymalloc(100);
+    free(b);
+    e = mymalloc(20);
+	print_memory();
 }
