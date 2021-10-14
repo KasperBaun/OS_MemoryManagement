@@ -49,25 +49,18 @@ void initmem(strategies strategy, size_t sz)
 	/* 
 	Release any memory previously allocated and assigned 
 	in case this is not the first time initmem is called */
-	if(myMemory!=NULL) free(myMemory);
-	if(head!=NULL){
-		memoryList *trav;
-		for(trav=head; trav->next!=NULL; trav=trav->next){
-			if (trav->last != NULL)
-			{
-				free(trav->last);
-			}
-			
-		}	
-		free(trav);
-	}
+	if(myMemory!=NULL) 
+		free(myMemory);
+	if(head)
+		free(head);
+		
 	
 
 
 	/*  Assign memory space on heap for myMemory 
 		and create new node head and attach*/
 	myMemory = malloc(mySize);	
-	head = (memoryList*) malloc(sizeof (memoryList));
+	head = malloc(sizeof (memoryList));
 	head->last = NULL; 
 	head->next = NULL;
 	head->size = sz; // First block size is equal to size_t sz given in initmem()
