@@ -76,8 +76,8 @@ void initmem(strategies strategy, size_t sz)
 void *allocateBlock(memoryList *suitableBlock, size_t requested){
 	memoryList *new = malloc(sizeof(memoryList));
 	new->alloc = 0;
-
 	suitableBlock->alloc = 1;
+
 	/* If head */
 	if (suitableBlock->last == NULL)
 	{
@@ -91,6 +91,7 @@ void *allocateBlock(memoryList *suitableBlock, size_t requested){
 		} else new->next = NULL;
 		suitableBlock->next = new;
 		new->ptr = suitableBlock->ptr+requested;
+		currForNextFit = suitableBlock;
 		return suitableBlock->ptr;		
 	}
 	
@@ -103,6 +104,7 @@ void *allocateBlock(memoryList *suitableBlock, size_t requested){
 		suitableBlock->next = new;
 		new->next = NULL;
 		new->ptr = suitableBlock->ptr+requested;
+		currForNextFit = suitableBlock;
 		return suitableBlock->ptr;
 	}
 	
@@ -116,7 +118,8 @@ void *allocateBlock(memoryList *suitableBlock, size_t requested){
 	suitableBlock->next->last = new;
 	suitableBlock->next = new;
 
-	new->ptr = suitableBlock->ptr+requested;				
+	new->ptr = suitableBlock->ptr+requested;
+	currForNextFit = suitableBlock;				
 	return suitableBlock->ptr;					
 }
 
@@ -167,35 +170,22 @@ void *findWorst(size_t requested){
 	return worstFit;
 }
 
-//Find the next suitable block of free memory relative to the last block found.
+//Find the next suitable block of free memory relative to the last block allocated.
 void *findNext(size_t requested) {
-    int secondIteration = 0;
 
     //Case for the first allocation
     if (currForNextFit == NULL) {
         currForNextFit = head;
     }
-
-    //traverse from the current note, not necessarily the first
-    memoryList *trav = currForNextFit;
-
-    while(trav != NULL) {
-        if (trav->size >= requested && trav->alloc == 0) {
-            currForNextFit = trav;  //updates the current node for next allocation
-            return trav;
-        } else if (trav == currForNextFit && secondIteration == 1) {    //if entire list has been checked
-            break;
-        }
-
-        //if the end is reached there is looped back to the start
-        if (trav->next == NULL) {
-            trav = head;
-            secondIteration = 1;
-        } else {
-            trav = trav->next;
-        }
-
-    }
+	memoryList *trav = currForNextFit;
+	while (trav != NULL)
+	{
+		if (trav->alloc == 0 && trav->size >= requested)
+		{
+			return currForNextFit;
+		}
+		trav = trav->next;
+	}
     return NULL;
 }
 
@@ -223,6 +213,7 @@ void *mymalloc(size_t requested)
 	      break;
 	  case Next:
 	      suitableBlock = findNext(requested);
+		  break;
 	  }
 
 	// There was no unallocated block large enough for requested.
@@ -247,8 +238,6 @@ void myfree(void* block)
 	memoryList *trav = head;
 	int foundblock = 0;
 
-	int updateCurrForNext = 0;
-
 	while (trav!=NULL)
 	{
 		if (trav->ptr==block)
@@ -266,10 +255,7 @@ void myfree(void* block)
 		/* Check for free adjacent block left side */
 		if ((trav->last != NULL) && (trav->last->alloc == 0)){
 
-            if (currForNextFit == trav) {       //trav is combined into trav->last so the pointer for the Next algorithm is updated [1]
-                updateCurrForNext = 1;
-            }
-
+           
 			trav->last->size += trav->size;
 			if (trav->next != NULL)
 			{
@@ -281,18 +267,13 @@ void myfree(void* block)
 			trav = trav->last;
 			free(temp);
 
-            if (updateCurrForNext) {        //trav is combined into trav->last so the pointer for the Next algorithm is updated [2]
+            if (currForNextFit==NULL) {        //trav is combined into trav->last so the pointer for the Next algorithm is updated [2]
                 currForNextFit = trav;
-                updateCurrForNext = 0;
             }
 		}
 
 		/* Check for free adjacent block right side */
 		if ((trav->next != NULL) && (trav->next->alloc == 0)){
-
-            if (currForNextFit == trav->next) {       //trav->next is combined into trav so the pointer for the Next algorithm is updated [1]
-                updateCurrForNext = 1;
-            }
 
 			trav->size += trav->next->size;
 			memoryList *temp = trav->next;
@@ -304,9 +285,8 @@ void myfree(void* block)
 			}	else trav->next = NULL;
 			free(temp);
 
-            if (updateCurrForNext) {        //trav->next is combined into trav so the pointer for the Next algorithm is updated [2]
+            if (currForNextFit == NULL) {        //trav->next is combined into trav so the pointer for the Next algorithm is updated [2]
                 currForNextFit = trav;
-                updateCurrForNext = 0;
             }
 
 		}
