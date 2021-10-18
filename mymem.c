@@ -188,7 +188,9 @@ void freeAdjacentBlock(memoryList *blockToFree){
 	}
 
 	if (currNode == blockToFree){
-		currNode = blockToFree->last;
+		if(blockToFree->next!=NULL){
+			currNode = head;
+		} else currNode = blockToFree->last;
 	}
 	free(blockToFree);
 }
@@ -234,8 +236,10 @@ void *mymalloc(size_t requested)
 
 	else{
 		/* This is only required and set if the size requested == suitableBlock->size */
-			
-		currNode = suitableBlock;
+		if (suitableBlock->next == NULL)
+		{
+			currNode = head;
+		} else 	currNode = suitableBlock;
 	}
 
 	// If the block size found is == requested, we dont need to create a new block in our memory so we just set suitableBlock->alloc = 1;
@@ -262,6 +266,11 @@ void myfree(void* block)
 
 	/* Check for free adjacent block left side */
 	if (trav->last && trav->last->alloc == 0){
+		if (!trav->next)
+		{
+			freeAdjacentBlock(trav);
+			return;
+		}
 			
 		memoryList *refHolder = trav->last;
 		freeAdjacentBlock(trav);
@@ -374,6 +383,19 @@ char mem_is_alloc(void *ptr)
 	return 0;
 }
 
+void *findNodeByPtr(int *ptr){
+	memoryList *trav = head;
+	while (trav!=NULL)
+	{
+		if (trav->ptr == ptr)
+		{
+			return trav;
+		}
+		
+		trav = trav->next;
+	}	
+	return NULL;
+}
 /* 
  * Feel free to use these functions, but do not modify them.  
  * The test code uses them, but you may find them useful.
@@ -449,13 +471,12 @@ void print_memory()
 	int counter = 0;
 	printf("### Printing memory-list ###\n");
 	while(trav!=NULL)
-		{
+	{
 		printf(" node number = %d\n size = %d\n last = %p\n next = %p\n this.ptr = %p\n", counter,trav->size, trav->last, trav->next, trav->ptr);
 		printf(" Is the node allocated: %d\n\n",trav->alloc );
 		counter++;
 		trav = trav->next;
-		}	
-	return;
+	}
 }
 
 /* Use this function to track memory allocation performance.  
@@ -469,6 +490,20 @@ void print_memory_status()
 	printf("Average hole size is %f.\n\n",((float)mem_free())/mem_holes());
 }
 
+void print_node(memoryList *node){
+	memoryList *trav = head;
+	int counter = 0;
+	while(trav!=NULL)
+	{	
+		if(trav==node){
+		printf("<<Printing node %d>>\n", counter);	
+		printf(" node number = %d\n size = %d\n last = %p\n next = %p\n this.ptr = %p\n", counter,trav->size, trav->last, trav->next, trav->ptr);
+		printf(" Is the node allocated: %d\n\n",trav->alloc );
+		}
+		counter++;
+		trav = trav->next;
+	}
+}
 /* Use this function to see what happens when your malloc and free
  * implementations are called.  Run "mem -try <args>" to call this function.
  * We have given you a simple example to start.
@@ -485,37 +520,98 @@ void try_mymem(int argc, char **argv) {
 	/* A simple example.  
 	   Each algorithm should produce a different layout. */
 
-    initmem(strat,500);
-    a = mymalloc(100);
-	printf("currNode Pointer 1:  %p \n", currNode);
-    b = mymalloc(100);
-	printf("currNode Pointer 2:  %p \n", currNode);
-    c = mymalloc(100);
-	printf("currNode Pointer 3:  %p \n", currNode);
-    d = mymalloc(100);
-	printf("currNode Pointer 4:  %p \n", currNode);
-    e = mymalloc(100);
-	printf("currNode Pointer 5:  %p \n", currNode);
-    print_memory();
-    printf("currNode Pointer 6:  %p \n", currNode);
-    myfree(e);
-    printf("currPoint %p \n\n",currNode);
+	   initmem(strat,500);
+    printf("currNode 0:  %p \n", currNode);
+	a = mymalloc(100);
+	printf("A's ptr-> : %p \n",a);
+	print_node(findNodeByPtr(a));
+	
 
-    myfree(a);
-	printf("currNode after freeing head %p \n\n",currNode);
-    myfree(d);
-	 printf("currNode after freeing b %p \n\n",currNode);
-    myfree(c);
+	printf("currNode 1:  %p \n", currNode);
+	b = mymalloc(100);
+	printf("B's ptr-> : %p \n",b);
+	print_node(findNodeByPtr(b));
+
+	printf("currNode 2:  %p \n", currNode);
+	c = mymalloc(100);
+	printf("C's ptr-> : %p \n",c);
+	print_node(findNodeByPtr(c));
+
+	printf("currNode 3:  %p \n", currNode);
+	d = mymalloc(100);
+	printf("D's ptr-> : %p \n",d);
+	print_node(findNodeByPtr(d));
+	
     myfree(b);
-	printf("currNode Pointer after list is empty:  %p \n", currNode);
-    print_memory();
-    a = mymalloc(100);
-	printf("currNode a Pointer %p \n",currNode);
-    b = mymalloc(100);
-	printf("currNode b Pointer %p \n",currNode);
-    c = mymalloc(100);
-	printf("currNode c Pointer %p \n",currNode);
-    d = mymalloc(100);
-    printf("currNode d Pointer %p \n",currNode);
-    print_memory();
+	myfree(d);
+	print_memory();
+	d = mymalloc(100);
+	printf("currNode 4:  %p \n", currNode);
+	printf("E's ptr-> : %p \n",d);
+	print_node(findNodeByPtr(d));
+
+	/*
+	   strategies strategy;
+	int lbound = 1;
+	int ubound = 4;
+
+	if (strategyFromString(*(argv + 1)) > 0)
+		lbound = ubound = strategyFromString(*(argv + 1));
+
+	for (strategy = lbound; strategy <= ubound; strategy++)
+	{
+		int correct_holes = 0;
+		int correct_alloc = 100;
+		int correct_largest_free = 0;
+		int i;
+
+		void *lastPointer = NULL;
+		initmem(strategy, 100);
+		for (i = 0; i < 100; i++)
+		{
+			void *pointer = mymalloc(1);
+			if (i > 0 && pointer != (lastPointer + 1))
+			{
+				printf("Allocation with %s was not sequential at %i; expected %p, actual %p\n", strategy_name(strategy), i, lastPointer + 1, pointer);
+				return 1;
+			}
+			lastPointer = pointer;
+		}
+		print_memory();
+		for (i = 1; i < 100; i += 2)
+		{
+			printf("Memory ptr : %p \n", mem_pool()+i);
+			myfree(mem_pool() + i);
+		}
+		print_memory();
+		for (i = 1; i < 100; i += 2)
+		{
+			void *pointer = mymalloc(1);
+			printf("%x\n",pointer);
+			if (i > 1 && pointer != (lastPointer + 2))
+			{
+				printf("Second allocation with %s was not sequential at %i; expected %p, actual %p\n", strategy_name(strategy), i, lastPointer + 1, pointer);
+				return 1;
+			}
+			lastPointer = pointer;
+		}
+
+		if (mem_holes() != correct_holes)
+		{
+			printf("Holes not counted as %d with %s\n", correct_holes, strategy_name(strategy));
+			return 1;
+		}
+
+		if (mem_allocated() != correct_alloc)
+		{
+			printf("Memory not reported as %d with %s\n", correct_alloc, strategy_name(strategy));
+			return 1;
+		}
+
+		if (mem_largest_free() != correct_largest_free)
+		{
+			printf("Largest memory block free not reported as %d with %s\n", correct_largest_free, strategy_name(strategy));
+			return 1;
+		}
+	} */
 }
