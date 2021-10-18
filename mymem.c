@@ -24,7 +24,6 @@ strategies myStrategy = NotSet;    // Current strategy
 size_t mySize;
 void *myMemory = NULL;
 static memoryList *head;
-
 static memoryList *currForNextFit = NULL;
 
 /* initmem must be called prior to mymalloc and myfree.
@@ -50,84 +49,71 @@ void initmem(strategies strategy, size_t sz)
 	/* 
 	Release any memory previously allocated and assigned 
 	in case this is not the first time initmem is called */
-	if(myMemory!=NULL) 
+	if(myMemory)
+	{ 
 		free(myMemory);
+	}
+
 	if(head)
-		free(head);
-		
+	{
+		memoryList *trav;
+		for (trav = head; trav->next != NULL; trav=trav->next)
+		{
+			if (trav->last)
+			{
+				free(trav->last);
+			}
+			
+		}
+		free(trav);
+	}	
 	
 
 
 	/*  Assign memory space on heap for myMemory 
 		and create new node head and attach*/
 	myMemory = malloc(mySize);	
-	head = malloc(sizeof (memoryList));
+	head = malloc(sizeof(memoryList));
 	head->last = NULL; 
 	head->next = NULL;
 	head->size = sz; // First block size is equal to size_t sz given in initmem()
 	head->alloc = 0;  // Not allocated
 	head->ptr = myMemory;  // points to the same memory adress as the memory pool
-
-////have an initial reference for nextFit current pointer var --Currently handled in findNext--
-//	currForNextFit = head;
+	currForNextFit = head;
 }
 
 // Allocate a block in the DLL and update pointers accordingly
-void *allocateBlock(memoryList *suitableBlock, size_t requested){
+void allocateBlock(memoryList *suitableBlock, size_t requested){
 	memoryList *new = malloc(sizeof(memoryList));
-	new->alloc = 0;
-	suitableBlock->alloc = 1;
 
-	/* If head */
-	if (suitableBlock->last == NULL)
-	{
-		new->size = suitableBlock->size-requested;
-		suitableBlock->size = requested;
-		new->last = suitableBlock;
-		if (suitableBlock->next != NULL)
-		{
-			suitableBlock->next->last = new;
-			new->next = suitableBlock->next;
-		} else new->next = NULL;
-		suitableBlock->next = new;
-		new->ptr = suitableBlock->ptr+requested;
-		currForNextFit = suitableBlock;
-		return suitableBlock->ptr;		
-	}
-	
-	/* If tail */
-	if (suitableBlock->next == NULL)
-	{
-		new->size = suitableBlock->size-requested;
-		suitableBlock->size = requested;
-		new->last = suitableBlock;
-		suitableBlock->next = new;
-		new->next = NULL;
-		new->ptr = suitableBlock->ptr+requested;
-		currForNextFit = suitableBlock;
-		return suitableBlock->ptr;
-	}
-	
-
-	/* else */
-	new->size = suitableBlock->size-requested;
-	suitableBlock->size = requested;
-
-	new->next = suitableBlock->next;
+	/* Set connection for new and update for suitableBlock 
+	and other affected blocks if they exist*/
 	new->last = suitableBlock;
-	suitableBlock->next->last = new;
+ 	/* If suitableBlock->next == NULL 
+	then new->next will just be set to NULL 
+	this will NOT cause a seg-fault */
+	new->next = suitableBlock->next;
+	if(new->next)
+	{
+		/* This is needed because if new->next does not exist 
+		and we try to acces its variables, we will cause seg-fault */
+		new->next->last = new;
+	} 
 	suitableBlock->next = new;
-
-	new->ptr = suitableBlock->ptr+requested;
-	currForNextFit = suitableBlock;				
-	return suitableBlock->ptr;					
+	
+	/* Set size for new and suitableBlock */
+	new->size = suitableBlock->size - requested;
+	suitableBlock->size = requested;
+	new->ptr = suitableBlock->ptr + requested;
+	currForNextFit = new;
+	new->alloc = 0;					
 }
 
 // Find a suitable free block with memory algorithm First-fit
 void *findFirst(size_t requested){
 	memoryList *trav = head;
 	while(trav!=NULL){
-		if(trav->size>=requested && trav->alloc==0){
+		if(trav->size >= requested && trav->alloc == 0){
 			// Found a suitable block
 			return trav;
 		}
@@ -135,6 +121,7 @@ void *findFirst(size_t requested){
 	}
 	return NULL;
 }
+
 // Find a suitable free block with memory algorithm Best-fit
 void *findBest(size_t requested){
 	memoryList *trav = head;
@@ -152,6 +139,7 @@ void *findBest(size_t requested){
 	}
 	return bestFit;
 }
+
 // Find a suitable free block with memory algorithm Worst-fit
 void *findWorst(size_t requested){
 	memoryList *trav = head;
@@ -173,10 +161,6 @@ void *findWorst(size_t requested){
 //Find the next suitable block of free memory relative to the last block allocated.
 void *findNext(size_t requested) {
 
-    //Case for the first allocation
-    if (currForNextFit == NULL) {
-        currForNextFit = head;
-    }
 	memoryList *trav = currForNextFit;
 	while (trav != NULL)
 	{
@@ -186,9 +170,25 @@ void *findNext(size_t requested) {
 		}
 		trav = trav->next;
 	}
-    return NULL;
+    return currForNextFit;
 }
 
+/*Made a function for freeing adjacent blocks to divide up responsibilites since we got alot of errors - some segfaults, 
+  some incorrect child pid faults and some like this: "double free() detected" 
+  We didn't really change the logic so havent really learned anything from it but it fixed our weird errors */
+void freeAdjacentBlock(memoryList *blockToFree){
+	blockToFree->last->size += blockToFree->size;
+
+	if(blockToFree->next){
+		blockToFree->last->next = blockToFree->next;
+		blockToFree->next->last = blockToFree->last;
+	}
+	else{
+		blockToFree->last->next = NULL;
+	}
+	if(currForNextFit == blockToFree) currForNextFit = blockToFree->last;
+	free(blockToFree);
+}
 
 /* Allocate a block of memory with the requested size.
  *  If the requested block is not available, mymalloc returns NULL.
@@ -197,11 +197,13 @@ void *findNext(size_t requested) {
  */
 void *mymalloc(size_t requested)
 {
+	assert((int)myStrategy>0);
 	memoryList *suitableBlock=NULL;
 	switch (myStrategy)
 	  {
 	  case NotSet:
 	      return NULL;
+		  break;
 	  case First:
 	      suitableBlock = findFirst(requested);
 	      break;
@@ -217,14 +219,21 @@ void *mymalloc(size_t requested)
 	  }
 
 	// There was no unallocated block large enough for requested.
-	if((suitableBlock==NULL)){ 
-		printf("No suitable block found for strategy %s \n",strategy_name(myStrategy)); 
+	if(suitableBlock == NULL){ 
+		//printf("No suitable block found for strategy %s \n",strategy_name(myStrategy)); 
 		return NULL;
 	}
 
 	// If the block found is larger than requested we need to insert a new adjacent block with the leftover memory space	
-	if(suitableBlock->size > requested)	
-		return allocateBlock(suitableBlock, requested);
+	if(suitableBlock->size > requested){	
+		allocateBlock(suitableBlock, requested);
+	}
+
+	else{
+		/* This is only required and set if the size requested == suitableBlock->size */
+			
+		currForNextFit = findNext(1);
+	}
 
 	// If the block size found is == requested, we dont need to create a new block in our memory so we just set suitableBlock->alloc = 1;
 	suitableBlock->alloc = 1;
@@ -236,62 +245,32 @@ void *mymalloc(size_t requested)
 void myfree(void* block)
 {
 	memoryList *trav = head;
-	int foundblock = 0;
 
 	while (trav!=NULL)
 	{
 		if (trav->ptr==block)
 		{
-			foundblock = 1;	
 			break;
 		}		
 		trav = trav->next;
 	}
-	if (foundblock)
-	{	
-		/* Deallocate trav */ 
-		trav->alloc = 0;
+	/* Deallocate trav */ 
+	trav->alloc = 0;
 
-		/* Check for free adjacent block left side */
-		if ((trav->last != NULL) && (trav->last->alloc == 0)){
+	/* Check for free adjacent block left side */
+	if (trav->last && trav->last->alloc == 0){
 
-           
-			trav->last->size += trav->size;
-			if (trav->next != NULL)
-			{
-				// Update pointers 
-				trav->last->next = trav->next;
-				trav->next->last = trav->last;
-			} else trav->last->next = NULL;
-			memoryList *temp = trav;
-			trav = trav->last;
-			free(temp);
+		memoryList *refHolder = trav->last;
+		freeAdjacentBlock(trav);
+		trav = refHolder;
+	}
 
-            if (currForNextFit==NULL) {        //trav is combined into trav->last so the pointer for the Next algorithm is updated [2]
-                currForNextFit = trav;
-            }
-		}
-
-		/* Check for free adjacent block right side */
-		if ((trav->next != NULL) && (trav->next->alloc == 0)){
-
-			trav->size += trav->next->size;
-			memoryList *temp = trav->next;
-			if (trav->next->next != NULL)
-			{
-				// Update pointers
-				trav->next = trav->next->next;
-				trav->next->next->last = trav;
-			}	else trav->next = NULL;
-			free(temp);
-
-            if (currForNextFit == NULL) {        //trav->next is combined into trav so the pointer for the Next algorithm is updated [2]
-                currForNextFit = trav;
-            }
-
-		}
+	/* Check for free adjacant block left side */
+	if (trav->next && trav->next->alloc == 0){
+		freeAdjacentBlock(trav->next);
 	}
 }
+
 
 /****** Memory status/property functions ******
  * Implement these functions.
@@ -492,8 +471,8 @@ void print_memory_status()
  * We have given you a simple example to start.
  */
 void try_mymem(int argc, char **argv) {
-        strategies strat;
-	void *a, *b, *c, *d, *e, *f;
+    strategies strat;
+	void *a, *b, *c, *d, *e;
 	if(argc > 1)
 	  strat = strategyFromString(argv[1]);
 	else
@@ -505,12 +484,17 @@ void try_mymem(int argc, char **argv) {
 
     initmem(strat,500);
     a = mymalloc(100);
+	printf("currNextFit Pointer 1:  %p \n", currForNextFit);
     b = mymalloc(100);
-    c = mymalloc(100);
-    d = mymalloc(100);
-    e = mymalloc(100);
+	c = printf("currNextFit Pointer 2:  %p \n", currForNextFit);
+    mymalloc(100);
+	printf("currNextFit Pointer 3:  %p \n", currForNextFit);
+    mymalloc(100);
+	printf("currNextFit Pointer 4:  %p \n", currForNextFit);
+    mymalloc(100);
+	printf("currNextFit Pointer 5:  %p \n", currForNextFit);
     print_memory();
-    printf("currNextFit Pointer:  %p \n", currForNextFit);
+    printf("currNextFit Pointer 6:  %p \n", currForNextFit);
     myfree(e);
     printf("currPoint %p \n\n",currForNextFit);
 
@@ -519,28 +503,14 @@ void try_mymem(int argc, char **argv) {
     myfree(c);
     myfree(d);
     print_memory();
-    printf("currNextFit 2 Pointer: %p \n", currForNextFit);
-//	myfree(e);
+    printf("currNextFit 7 Pointer: %p \n", currForNextFit);
+	myfree(e);
     print_memory();
-    printf("currNextFit 3 Pointer %p \n",currForNextFit);
+    printf("currNextFit 8 Pointer %p \n",currForNextFit);
     a = mymalloc(100);
     b = mymalloc(100);
     c = mymalloc(100);
     d = mymalloc(100);
-    printf("currNextFit 4 Pointer %p \n",currForNextFit);
+    printf("currNextFit 9 Pointer %p \n",currForNextFit);
     print_memory();
-/*
-
-	initmem(strat,500);
-   	a = mymalloc(100);
-	b = mymalloc(70);
-	c = mymalloc(80);
-	d = mymalloc(75);
-	e = mymalloc(100);
-	myfree(b);
-	myfree(e);
-	f = mymalloc(65);
-	print_memory();
-*/
-
 }
