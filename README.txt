@@ -119,17 +119,46 @@ Answer the following questions as part of your report
 1) Why is it so important that adjacent free blocks not be left as such?  What
 would happen if they were permitted?
 
+Then they would be counted as several smaller free blocks of memory and after a while there
+would not be any blocks big enough to hold normally sized processes anymore.
+There would just be a lot of smaller, almost useless, fragments of free memory blocks adjacent to each other.
+
+
 2) Which function(s) need to be concerned about adjacent free blocks?
 
+The function(s) responsible for freeing the allocated memory as it when a block is freed that there
+could potentially be free adjacent blocks which should be combined.
+(e.g. myfree(...))
+
+
 3) Name one advantage of each strategy.
+
+FirstFit: Initial fast processing. Allocates to the next available free block of memory, without further checks.
+
+BestFit: Efficient memory usage. Allocates to the smallest fitting block so as little as possible memory is wasted.
+
+WorstFit: Controlled internal fragmentation. Allocates to the largest fitting block so the "leftover" block
+            would often be big enough to be used for other smaller processes.
+
+NextFit: Continuous fast processing. Allocates to the next free fitting block relative to the last allocated.
+            This will, unlike firstFit, prevent a "collection" of allocations in the start of the memory.
+            which means that it won't have to repeatedly check a "busy" part of the memory that could occur in firstFit
+            with longer running processes.
+
 
 4) Run the stress test on all strategies, and look at the results (tests.out).
 What is the significance of "Average largest free block"?  Which strategy
 generally has the best performance in this metric?  Why do you think this is?
 
+NextFit generally has the average largest free block. //todo ...
+
+
 5) In the stress test results (see Question 4), what is the significance of
 "Average number of small blocks"?  Which strategy generally has the best
 performance in this metric?  Why do you think this is?
+
+//todo
+
 
 6) Eventually, the many mallocs and frees produces many small blocks scattered
 across the memory pool.  There may be enough space to allocate a new block, but
@@ -137,16 +166,32 @@ not in one place.  It is possible to compact the memory, so all the free blocks
 are moved to one large free block.  How would you implement this in the system
 you have built?
 
+//todo
+
+
 7) If you did implement memory compaction, what changes would you need to make
 in how such a system is invoked (i.e. from a user's perspective)?
+
+//todo
+
 
 8) How would you use the system you have built to implement realloc?  (Brief
 explanation; no code)
 
+//todo
+
+
 9) Which function(s) need to know which strategy is being used?  Briefly explain
 why this/these and not others.
+
+The function(s) responsible for allocating the processes, as it is there the suitable block is to be identified.
+(e.g. mymalloc(...))
+
 
 10) Give one advantage of implementing memory management using a linked list
 over a bit array, where every bit tells whether its corresponding byte is
 allocated.
+
+//todo
+
 
