@@ -137,7 +137,7 @@ FirstFit: Initial fast processing. Allocates to the next available free block of
 
 BestFit: Efficient memory usage. Allocates to the smallest fitting block so as little as possible memory is wasted.
 
-WorstFit: Controlled internal fragmentation. Allocates to the largest fitting block so the "leftover" block
+WorstFit: Controlled external fragmentation. Allocates to the largest fitting block so the "leftover" block
             would often be big enough to be used for other smaller processes.
 
 NextFit: Continuous fast processing. Allocates to the next free fitting block relative to the last allocated.
@@ -157,7 +157,10 @@ NextFit generally has the average largest free block. //todo ...
 "Average number of small blocks"?  Which strategy generally has the best
 performance in this metric?  Why do you think this is?
 
-//todo
+The less small blocks the better the memory is used. This is because bigger blocks are more likely to fit
+most of the processes, big and small.
+So the smallest average number of small blocks would be the best. This is best performed by worstFit, which intuitively
+makes sense, as worstFit will leave bigger "leftover" blocks after most allocations.
 
 
 6) Eventually, the many mallocs and frees produces many small blocks scattered
@@ -166,7 +169,11 @@ not in one place.  It is possible to compact the memory, so all the free blocks
 are moved to one large free block.  How would you implement this in the system
 you have built?
 
-//todo
+You could reallocate the processes to fit compactly, leaving more sequential free memory for future processes.
+An example of a solution could be that when a block of memory is freed after a process is finished, and an allocated
+block of memory is located in the next memory sequence, that following allocated memory is then moved up
+to the freed memory's location. This prevents external fragmentation, meaning that the "too small" free memory
+blocks between processes are removed by moving memory up to fill the freed memory locations.
 
 
 7) If you did implement memory compaction, what changes would you need to make
