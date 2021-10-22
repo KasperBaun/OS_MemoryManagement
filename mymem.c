@@ -331,7 +331,7 @@ void myfree(void* block)
 
 /* Get the number of contiguous areas of free space in memory. */
 int mem_holes()
-{	//TODO: Ask buphjit if this is supposed to calculate contiguos ares of free space? Is this to be used for compacting?
+{
 	int counter=0;
 	memoryList *trav = head;
 	while(trav!=NULL)

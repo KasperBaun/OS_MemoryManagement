@@ -122,6 +122,7 @@ would happen if they were permitted?
 Then they would be counted as several smaller free blocks of memory and after a while there
 would not be any blocks big enough to hold normally sized processes anymore.
 There would just be a lot of smaller, almost useless, fragments of free memory blocks adjacent to each other.
+This is known as external fragmentation.
 
 
 2) Which function(s) need to be concerned about adjacent free blocks?
@@ -135,7 +136,7 @@ could potentially be free adjacent blocks which should be combined.
 
 FirstFit: Initial fast processing. Allocates to the next available free block of memory, without further checks.
 
-BestFit: Efficient memory usage. Allocates to the smallest fitting block so as little as possible memory is wasted.
+BestFit: Efficient memory usage. Allocates to the smallest fitting block so as little as possible memory is wasted initially.
 
 WorstFit: Controlled external fragmentation. Allocates to the largest fitting block so the "leftover" block
             would often be big enough to be used for other smaller processes.
@@ -150,7 +151,10 @@ NextFit: Continuous fast processing. Allocates to the next free fitting block re
 What is the significance of "Average largest free block"?  Which strategy
 generally has the best performance in this metric?  Why do you think this is?
 
-NextFit generally has the average largest free block. //todo ...
+NextFit generally has the average largest free block. This makes sense because nextFit distributes the
+processes more evenly on the available memory, which prevents a precess heavy front of the memory
+which could quickly cause a lot fragmentation. This keeps helps prevent smaller free memory blocks from
+appearing quite as often as in other strategies.
 
 
 5) In the stress test results (see Question 4), what is the significance of
@@ -185,7 +189,9 @@ in how such a system is invoked (i.e. from a user's perspective)?
 8) How would you use the system you have built to implement realloc?  (Brief
 explanation; no code)
 
-//todo
+We could, instead of setting allocated to 0 or 1, set reallocate the freed blocks to move
+the free memory to the end block instead. This could be done using realloc method to resize the end block with
+the addition of freed block's size when the free blocks are removed.
 
 
 9) Which function(s) need to know which strategy is being used?  Briefly explain
@@ -199,6 +205,6 @@ The function(s) responsible for allocating the processes, as it is there the sui
 over a bit array, where every bit tells whether its corresponding byte is
 allocated.
 
-//todo
+Easier traversal. Instead of having to traverse every bit, just every block can to be traversed with linked list.
 
 
