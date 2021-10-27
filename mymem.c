@@ -273,7 +273,8 @@ void *mymalloc(size_t requested) {
 		if (suitableBlock->next == NULL)
 		{
 			currNode = head;
-		} else 	currNode = suitableBlock;
+		} else
+		    currNode = suitableBlock;
 	}
 
 	// If the block size found is == requested, we dont need to create a new block in our memory so we just set suitableBlock->alloc = 1;

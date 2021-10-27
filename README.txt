@@ -1,6 +1,25 @@
  Memory Management
 ===================
 
+###################### OUR INFORMATION #############################
+
+developed by:
+Emil Johannes Lundqvist (s185131)
+Kasper Baun             (s172483)
+Rikke Galløe            (s185015)
+
+Work done:
+We have implemented the required functions in mymem.c for the memory allocation and freeing to pass all the tests.
+
+The understanding questions for the assignment are answered after each question later in this document.
+
+
+Results:
+Our implementation passes all tests without problems.
+
+
+#####################################################################
+
 The problem will focus on memory.  You will implement your own 
 version of malloc() and free(), using a variety of allocation strategies.
 
@@ -136,7 +155,7 @@ could potentially be free adjacent blocks which should be combined.
 
 FirstFit: Initial fast processing. Allocates to the next available free block of memory, without further checks.
 
-BestFit: Efficient memory usage. Allocates to the smallest fitting block so as little as possible memory is wasted initially.
+BestFit: Good at fitting processes of specific sizes into exactly same sized free spaces in memory.
 
 WorstFit: Controlled external fragmentation. Allocates to the largest fitting block so the "leftover" block
             would often be big enough to be used for other smaller processes.
@@ -145,6 +164,15 @@ NextFit: Continuous fast processing. Allocates to the next free fitting block re
             This will, unlike firstFit, prevent a "collection" of allocations in the start of the memory.
             which means that it won't have to repeatedly check a "busy" part of the memory that could occur in firstFit
             with longer running processes.
+
+
+List of best performing algorithms in different cases (best, worse, worst):
+ - Speed: NextFit, FirstFit, (BestFit/WorstFit)
+ - Fragmentation: WorstFit, (NextFit, FirstFit), BestFit
+
+
+End note: If memory compaction is implemented the difference between all the strategies are diminished and
+            there would be very little to no difference in experience.
 
 
 4) Run the stress test on all strategies, and look at the results (tests.out).
@@ -183,7 +211,8 @@ blocks between processes are removed by moving memory up to fill the freed memor
 7) If you did implement memory compaction, what changes would you need to make
 in how such a system is invoked (i.e. from a user's perspective)?
 
-//todo
+It would be ideal to check to see if the processes are not actively being used (e.g. when minimated).
+Then the compaction could be run with little to no annoyance for the user.
 
 
 8) How would you use the system you have built to implement realloc?  (Brief
@@ -207,4 +236,7 @@ allocated.
 
 Easier traversal. Instead of having to traverse every bit, just every block can to be traversed with linked list.
 
+There would also need to be additional tracking of when an allocated process
+is part of one process and not the next subsequently allocated process.
+This is because a single bit doesn't hold enough information for differentiating between multiple processes.
 
